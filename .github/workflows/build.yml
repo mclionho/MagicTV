@@ -1,1 +1,42 @@
 
+name: Compilar MagicTV APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar proyecto
+        uses: actions/checkout@v4
+
+      - name: Preparar Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Instalar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Extraer proyecto
+        run: |
+          unzip -o MagicTV-main.zip -d proyecto
+          PROJECT_DIR=$(find proyecto -name settings.gradle.kts -printf '%h\n' | head -n 1)
+          echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
+
+      - name: Compilar APK
+        run: gradle -p "$PROJECT_DIR" assembleDebug
+
+      - name: Guardar APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MagicTV-APK
+          path: proyecto/**/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
